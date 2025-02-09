@@ -153,8 +153,8 @@ def patchfirmware(h: IntelHex, hw, patch):
                 offsets = [0xA13E * 2, 0xAAA4 * 2]
 
             for addr in offsets:
-                assert h.gets(addr, 4) == b"\x12\xC0\xB3\x00"  # MOV.B    #1, W2
-                h.puts(addr, b"\x22\xC0\xB3\x00")  # MOV.B    #2, W2
+                assert h.gets(addr, 4) == b"\x12\xc0\xb3\x00"  # MOV.B    #1, W2
+                h.puts(addr, b"\x22\xc0\xb3\x00")  # MOV.B    #2, W2
 
             # We replace RAM offsets with ROM offsets
             # MOV #0xXXXX, W0 and MOV #0xXXXX, W1

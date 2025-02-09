@@ -34,7 +34,7 @@ python manage.py --app thermostart run --debug
 flask --app thermostart shell
 
 # Dynamically change the docker's base image
-docker-compose -f docker-compose.prod.yml build --build-arg TS_IMAGE=python:3.12.2-slim-bookworm
+docker-compose -f docker-compose.prod.yml build --build-arg TS_IMAGE=python:3.13.2-slim-bookworm
 ```
 
 ## Docker compose related commands
@@ -65,10 +65,17 @@ Basically it's the same way as dev server, but you need to use different files:
   - `APP_FOLDER=/home/app/web`
   - `DATABASE_URL= <URL with proper database data>`
 
+You might want to copy the database which you created in the debug container. In that case make
+sure you change the ownership to userid:groupid 101:101 after copying the database file to the
+volume of the production container.
+
 And most importantly, to every docker command add the "-f" flag: `-f docker-compose.prod.yml`
 to point to the file that you want to use to build images and run. Example:
 ```
+# build and run
 docker-compose -f docker-compose.prod.yml build
+docker-compose -f docker-compose.prod.yml up -d
+$
 ```
 
 ## Support my work

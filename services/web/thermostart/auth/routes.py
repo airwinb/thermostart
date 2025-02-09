@@ -42,7 +42,8 @@ def login_page():
         device = Device.query.filter_by(hardware_id=Config.AUTOLOGIN_USERNAME).first()
         if not device:
             device = Device(
-                hardware_id=Config.AUTOLOGIN_USERNAME, password=Config.AUTOLOGIN_PASSWORD
+                hardware_id=Config.AUTOLOGIN_USERNAME,
+                password=Config.AUTOLOGIN_PASSWORD,
             )
             device.location_id = 3145  # Default to Amsterdam
             db.session.add(device)
