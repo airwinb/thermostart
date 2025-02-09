@@ -1,5 +1,5 @@
 # pull official base image
-ARG TS_IMAGE=python:3.12.2-slim-bullseye
+ARG TS_IMAGE=python:3.13.2-slim-bullseye
 FROM $TS_IMAGE
 
 # set work directory

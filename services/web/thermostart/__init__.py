@@ -60,7 +60,8 @@ def needs_alembic_version_in_db():
     engine = create_engine(Config.SQLALCHEMY_DATABASE_URI)
     metadata_obj.reflect(bind=engine)
     return (
-        "alembic_version" not in metadata_obj.tables and "location" in metadata_obj.tables
+        "alembic_version" not in metadata_obj.tables
+        and "location" in metadata_obj.tables
     )
 
 
