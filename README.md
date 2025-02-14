@@ -77,8 +77,12 @@ docker-compose -f docker-compose.prod.yml build
 docker-compose -f docker-compose.prod.yml up -d
 $
 ```
+## API to Thermostart server
+The API documentation can be found [docs/api/api.md](/docs/api/api.md). 
+At the moment it supports some basic setttings only.
 
-## Support my work
-Thank you for thinking about supporting my work.
+## Support the initiator (wichers' work)
+This repository is a clone of wichers' repository. 
+He did some excellent work on making sure that these devices can still be used. Thank him by buying him a coffee!
 
-[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/wichers)
+[!["Buy Wichers A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/wichers)
