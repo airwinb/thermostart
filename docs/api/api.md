@@ -258,7 +258,7 @@ JSON response
 </details>
 
 <details>
- <summary><code>POST</code> <code><b>/thermostat/{id}</b></code> <code>(set target temperature)</code></summary>
+ <summary><code>PUT</code> <code><b>/thermostat/{id}</b></code> <code>(set target temperature)</code></summary>
 
 ##### Parameters
 
