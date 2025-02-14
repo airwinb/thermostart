@@ -359,17 +359,37 @@ def api():
     elif device.ui_synced is False:
 
         # somebody pressed pause?
-        if device.ui_source == "pause_button":
+        if (
+            device.ui_source == "pause_button"
+            or device.ui_source == "api_pause_button"
+        ):
             pause = int(device.source == Source.PAUSE.value)
             xml += f"<PAUSE>{pause}</PAUSE>"
             xml += f"<INIT><SRC>{device.source}</SRC></INIT>"
+            if device.ui_source == "api_pause_button":
+                emit(
+                    "target_temperature",
+                    {"target_temperature": device.target_temperature},
+                    namespace="/",
+                    to=hardware_id,
+                )
+                emit("source", {"source": device.source}, namespace="/", to=hardware_id)
         elif (
             device.ui_source == "direct_temperature_setter_up"
             or device.ui_source == "direct_temperature_setter_down"
+            or device.ui_source == "api_temperature_setter"
         ):
             xml += "<PAUSE>0</PAUSE>"
             xml += f"<INIT><SRC>{device.source}</SRC></INIT>"
             xml += f"<SVSET>{device.target_temperature}</SVSET>"
+            if device.ui_source == "api_temperature_setter":
+                emit(
+                    "target_temperature",
+                    {"target_temperature": device.target_temperature},
+                    namespace="/",
+                    to=hardware_id,
+                )
+                emit("source", {"source": device.source}, namespace="/", to=hardware_id)
         else:
             xml += f"<TA>{device.ta}</TA>"
             xml += f"<DIM>{device.dim}</DIM>"
@@ -449,7 +469,7 @@ def api():
     return Response(response=data, status=200, mimetype="application/octet-stream")
 
 
-@ts.route("/thermostat/<device_id>", methods=["GET", "POST"])
+@ts.route("/thermostat/<device_id>", methods=["GET", "PUT"])
 def thermostat(device_id):
     device = Device.query.get(device_id)
     if device is None:
@@ -484,33 +504,66 @@ def thermostat(device_id):
                 },
             },
         )
-    else:
+    elif request.method == "PUT":
         data = request.json
+        changed = False
 
         if data.get("target_temperature"):
             device.target_temperature = data.get("target_temperature")
+            device.ui_source = "api_temperature_setter"
+            device.source = Source.MANUAL.value
+            changed = True
 
         if data.get("exceptions"):
             device.exceptions = data.get("exceptions")
+            changed = True
 
         if data.get("standard_week"):
             device.standard_week = data.get("standard_week")
+            changed = True
 
         if data.get("predefined_temperatures"):
             device.predefined_temperatures = data.get("predefined_temperatures")
+            changed = True
 
         if data.get("outside_temperature"):
             device.outside_temperature = data.get("outside_temperature")
+            changed = True
 
         if data.get("room_temperature"):
             device.room_temperature = data.get("room_temperature")
+            changed = True
 
-        if data.get("pause"):
-            device.room_temperature = data.get("pause")
+        if changed:
             device.ui_synced = False
-            device.ui_source = "pause_button"
-            device.source = Source.PAUSE.value
+            db.session.commit()
+            return Response(response="OK", status=200)
+        else:
+            return Response(response="Nothing to update", status=200)
+    else:
+        return Response(response="method is not supported", status=400)
 
-        device.commit()
+@ts.route("/thermostat/<device_id>/pause", methods=["POST"])
+def thermostat_pause(device_id):
+    device = Device.query.get(device_id)
+    if device is None:
+        return Response(response="no activated device", status=400)
 
-    return Response(response="invalid method", status=400)
+    device.ui_source = "api_pause_button"
+    device.source = Source.PAUSE.value
+    device.ui_synced = False
+    db.session.commit()
+    return Response(response="OK", status=200)
+
+@ts.route("/thermostat/<device_id>/unpause", methods=["POST"])
+def thermostat_unpause(device_id):
+    device = Device.query.get(device_id)
+    if device is None:
+        return Response(response="no activated device", status=400)
+
+    device.ui_source = "api_pause_button"
+    device.source = Source.STD_WEEK.value
+    # device.source = Source.SERVER.value
+    device.ui_synced = False
+    db.session.commit()
+    return Response(response="OK", status=200)
