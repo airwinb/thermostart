@@ -10,8 +10,8 @@ FROM $TS_IMAGE AS builder
 WORKDIR /usr/src/app
 
 # set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # lint
 RUN pip install --upgrade pip
@@ -55,8 +55,8 @@ COPY --from=builder /usr/src/app/requirements.txt .
 RUN pip install --upgrade pip
 RUN pip install --no-cache /wheels/*
 
-# copy entrypoint.sh
-COPY ./entrypoint.sh $APP_HOME
+# copy entrypoint_debug.sh
+COPY entrypoint_debug.sh $APP_HOME
 
 # copy project
 COPY . $APP_HOME
@@ -68,5 +68,5 @@ RUN chown -R app:app $DB_HOME
 # change to the app user
 USER app
 
-# run entrypoint.prod.sh
-ENTRYPOINT ["/home/app/web/entrypoint.sh"]
+# run entrypoint_prod.sh
+ENTRYPOINT ["/home/app/web/entrypoint_prod.sh"]

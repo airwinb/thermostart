@@ -471,6 +471,7 @@ def api():
 
 @ts.route("/thermostat/<device_id>", methods=["GET", "PUT"])
 def thermostat(device_id):
+    # excludeSchedules = request.args.get('excludeSchedules')
     device = Device.query.get(device_id)
     if device is None:
         return Response(response="no activated device", status=400)
@@ -484,9 +485,16 @@ def thermostat(device_id):
             standard_week=device.standard_week,
             exceptions=device.exceptions,
             source=device.source,
+            source_name=Source(device.source).name,
+            ui_source=device.ui_source,
             firmware=device.fw,
             ot={
                 "enabled": device.oo,
+                "ch_enabled": device.ot0 & 0b000100000000 == 0b000100000000,
+                "ch_active": device.ot0 & 0b0010 == 0b0010,
+                "dhw_active": device.ot0 & 0b0100 == 0b0100,
+                "flame_on": device.ot0 & 0b1000 == 0b1000,
+                "fault_indication": device.ot0 & 0b0001 == 0b0001,
                 "raw": {
                     "ot0": device.ot0,
                     "ot1": device.ot1,

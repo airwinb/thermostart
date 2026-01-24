@@ -13,15 +13,15 @@ unique SECRET_KEY - at least change some characters there :)
 
 After that stay in the root folder and use following commands:
 ```
-# give permissions to your entrypoint.sh file
-chmod +x services/web/entrypoint.sh
+# give permissions to your entrypoint_debug.sh file
+chmod +x services/web/entrypoint_debug.sh
 
 # build and run
-docker-compose build
-docker-compose up -d
+docker-compose build -f Dockerfile.debug
+docker-compose up -d -f Dockerfile.debug
 
 # delete if not needed anymore
-docker-compose down
+docker-compose down -f Dockerfile.debug
 ```
 To use the application visit http://localhost:3888 in your browser.
 
@@ -32,9 +32,6 @@ python manage.py --app thermostart run --debug
 
 # Open shell with app's data
 flask --app thermostart shell
-
-# Dynamically change the docker's base image
-docker-compose -f docker-compose.prod.yml build --build-arg TS_IMAGE=python:3.13.2-slim-bookworm
 ```
 
 ## Docker compose related commands

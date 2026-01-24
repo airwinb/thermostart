@@ -1,7 +1,6 @@
 services:
   web:
     build: ./services/web
-    command: python manage.py run -p 3888 -h 0.0.0.0
     volumes:
       - ./services/web/:/usr/src/app/
       - db_data:/home/app/data/
@@ -9,12 +8,6 @@ services:
       - "3888:3888"
     env_file:
       - ./.env.dev
-    networks:
-      - app-network
-
-networks:
-  app-network:
-    driver: bridge
-
+networks: {}
 volumes:
   db_data:

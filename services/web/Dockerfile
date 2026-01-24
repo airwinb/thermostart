@@ -6,8 +6,8 @@ FROM $TS_IMAGE
 WORKDIR /usr/src/app
 
 # set environment variables
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
 
 # install dependencies
 RUN pip install --upgrade pip
@@ -17,5 +17,5 @@ RUN pip install -r requirements.txt
 # copy project
 COPY . /usr/src/app/
 
-# run entrypoint.sh
-ENTRYPOINT ["/usr/src/app/entrypoint.sh"]
+# run entrypoint_debug.sh
+ENTRYPOINT ["/usr/src/app/entrypoint_debug.sh"]
