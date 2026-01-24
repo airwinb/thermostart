@@ -2,14 +2,10 @@ import sys
 
 from flask.cli import FlaskGroup
 
-from thermostart import create_app, db, fill_location_db, needs_alembic_version_in_db
+from thermostart import create_app, fill_location_db, needs_alembic_version_in_db
 
 app = create_app()
 cli = FlaskGroup(app)
-
-@cli.command("create_app")
-def create_the_app():
-    create_app()
 
 @cli.command("fill_db")
 def fill_db():

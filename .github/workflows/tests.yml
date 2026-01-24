@@ -29,5 +29,5 @@ jobs:
           DATABASE_URL: sqlite:///flask_thermostart.db
           FLASK_APP: thermostart
         run: |
-          python services/web/manage.py create_app
+          python services/web/manage.py create_db
           pytest --disable-warnings
