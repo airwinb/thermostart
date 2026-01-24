@@ -7,6 +7,9 @@ from thermostart import create_app, db, fill_location_db, needs_alembic_version_
 app = create_app()
 cli = FlaskGroup(app)
 
+@cli.command("create_app")
+def create_the_app():
+    create_app()
 
 @cli.command("fill_db")
 def fill_db():
