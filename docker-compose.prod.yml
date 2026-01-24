@@ -10,12 +10,6 @@ services:
       - "3888:3888"
     env_file:
       - ./.env.prod
-    networks:
-      - app-network
-
-networks:
-  app-network:
-    driver: bridge
-
+networks: {}
 volumes:
   db_data_prod:

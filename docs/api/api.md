@@ -9,6 +9,13 @@
 > |------|------|-----------|--------------------------------------------|
 > | id   | path | string    | The id of the thermostat; Example: IT01234 |
 
+##### Headers
+
+> | name         | value            |
+> |--------------|------------------|
+> | content-type | application/json |
+
+
 ##### Responses
 
 > | http code | content-type                      | response                 |
@@ -17,6 +24,24 @@
 > | `400`     | `text/plain;charset=UTF-8`        | `no activated device`    |
 
 JSON response
+
+> | name            | data type | description                                |
+> |-----------------|-----------|--------------------------------------------|
+> | xxx_temperature | integer   | The actual temperature in tenth degrees; So 215 means 21.5 degrees |
+> | predefined_temperatures |   | List of preset with temperatures |
+> | standard_week | array   | Default schedule of presets during the week. "start": [dayOfWeek, hour, minutes] |
+> | source | integer    | 0 = CRASH, 1 = MANUAL (via thermostat), 2 = SERVER (via web), 3 = STD_WEEK, 4 = EXCEPTION (scheduled via web), 5 = PAUSE |
+> | source_name         | string | [CRASH, MANUAL, SERVER, STD_WEEK, EXCEPTION, PAUSE] |
+> | ot.ch_enabled       | boolean | Central Heating enabled. Parsed from ot.raw.ot0 |
+> | ot.ch_active        | boolean | Central Heating active. Parsed from ot.raw.ot0 |
+> | ot.dhw_active       | boolean | Domestic Hot Water active. Parsed from ot.raw.ot0 |
+> | ot.flame_on         | boolean | Central Heating is burning. Parsed from ot.raw.ot0 |
+> | ot.fault_indication | boolean | Parsed from ot.raw.ot0 |
+> | ot.raw              |         | OpenTherm raw data values |
+
+  <details>
+    <summary>JSON response example</summary>
+
 ```json
 {
   "name": "IT01234",
@@ -225,35 +250,57 @@ JSON response
     }
   ],
   "exceptions": [
-    
+    {
+      "start": [
+        2026,
+        0,
+        23,
+        17,
+        45
+      ],
+      "end": [
+        2026,
+        0,
+        23,
+        22,
+        15
+      ],
+      "temperature": "not_home"
+    }    
   ],
   "source": 3,
   "firmware": 30030131,
   "ot": {
     "enabled": 0,
+    "ch_enabled": true,
+    "ch_active": true,
+    "dhw_active": false,
+    "flame_on": true,
+    "fault_indication": false,
     "raw": {
-      "ot0": 0,
-      "ot1": 0,
-      "ot3": 0,
+      "ot0": 266,
+      "ot1": 17920,
+      "ot3": 16651,
       "ot17": 0,
       "ot18": 0,
       "ot19": 0,
-      "ot25": 0,
+      "ot25": 11210,
       "ot26": 0,
       "ot27": 0,
-      "ot28": 0,
+      "ot28": 9733,
       "ot34": 0,
-      "ot56": 0,
-      "ot125": 0
+      "ot56": 15360,
+      "ot125": 768
     }
   }
 }
 ```
+  </details>
 
 ##### Example cURL
 
 > ```javascript
->  curl -X GET 'http://thermoserver.localdomain:3888/thermostat/IT01234'
+>  curl -X GET 'http://thermoserver.localdomain:3888/thermostat/IT01234' -H 'content-type: application/json'
 > ```
 </details>
 
