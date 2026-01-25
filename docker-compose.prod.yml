@@ -3,13 +3,12 @@ services:
     build:
       context: ./services/web
       dockerfile: Dockerfile.prod
-    command: gunicorn -t 600 -k eventlet -w 1 -b 0.0.0.0:3888 'thermostart:create_app()'
     volumes:
       - db_data_prod:/home/app/data/
     ports:
       - "3888:3888"
     env_file:
-      - ./.env.prod
+      - ./.env.example.prod
 networks: {}
 volumes:
   db_data_prod:
