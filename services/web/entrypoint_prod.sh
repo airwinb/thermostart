@@ -9,4 +9,4 @@ fi
 python manage.py db upgrade
 python manage.py fill_db
 
-exec "$@"
+exec gunicorn -t 600 -k eventlet -w 1 -b 0.0.0.0:3888 'thermostart:create_app()'

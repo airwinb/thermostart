@@ -84,7 +84,7 @@ def account_page():
     else:
         location_id = current_user.location_id
 
-    (country, city) = (
+    country, city = (
         Location.query.with_entities(Location.country, Location.city)
         .filter_by(id=location_id)
         .order_by(Location.city)

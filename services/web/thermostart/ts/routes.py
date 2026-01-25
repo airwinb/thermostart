@@ -359,10 +359,7 @@ def api():
     elif device.ui_synced is False:
 
         # somebody pressed pause?
-        if (
-            device.ui_source == "pause_button"
-            or device.ui_source == "api_pause_button"
-        ):
+        if device.ui_source == "pause_button" or device.ui_source == "api_pause_button":
             pause = int(device.source == Source.PAUSE.value)
             xml += f"<PAUSE>{pause}</PAUSE>"
             xml += f"<INIT><SRC>{device.source}</SRC></INIT>"
@@ -551,6 +548,7 @@ def thermostat(device_id):
     else:
         return Response(response="method is not supported", status=400)
 
+
 @ts.route("/thermostat/<device_id>/pause", methods=["POST"])
 def thermostat_pause(device_id):
     device = Device.query.get(device_id)
@@ -562,6 +560,7 @@ def thermostat_pause(device_id):
     device.ui_synced = False
     db.session.commit()
     return Response(response="OK", status=200)
+
 
 @ts.route("/thermostat/<device_id>/unpause", methods=["POST"])
 def thermostat_unpause(device_id):
