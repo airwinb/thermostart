@@ -4,6 +4,9 @@ your old scheduling functionality back.
 
 Created with Flask technology and fully dockerized.
 
+## Prebuilt docker image
+A prebuilt docker image including installation instructions is available via https://hub.docker.com/repository/docker/airwinb/thermostart-web/general
+
 ## Flask commands
 
 ## Quick start: dockerize development

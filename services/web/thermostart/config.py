@@ -15,7 +15,9 @@ class Config:
     AI_MOVE_DELAY_SECONDS = float(os.getenv("AI_MOVE_DELAY_SECONDS", 1.5))
 
     APPLICATION_ROOT = os.getenv("APPLICATION_ROOT", "/")
+    TS_SERVER_VERSION = os.getenv("TS_SERVER_VERSION", "0.0.0")
 
     # Autologin feature, this is used by Home Assistant
     AUTOLOGIN_USERNAME = os.getenv("AUTOLOGIN_USERNAME", "")
     AUTOLOGIN_PASSWORD = os.getenv("AUTOLOGIN_PASSWORD", "")
+    TOMORROW_APIKEY = os.getenv("TOMORROW_APIKEY")
