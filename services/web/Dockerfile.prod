@@ -4,6 +4,7 @@
 
 # pull official base image
 ARG TS_IMAGE=python:3.13.2-slim-bullseye
+ARG TS_SERVER_VERSION
 FROM $TS_IMAGE AS builder
 
 # set work directory
@@ -40,6 +41,9 @@ RUN mkdir -p /home/app
 
 # create the app user
 RUN addgroup --system app && adduser --system --group app
+# set version number
+ARG TS_SERVER_VERSION
+ENV TS_SERVER_VERSION=${TS_SERVER_VERSION}
 
 # create the appropriate directories
 ENV HOME=/home/app

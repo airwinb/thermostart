@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 
 import pytz
 from flask_login import UserMixin
@@ -157,6 +157,58 @@ class Device(UserMixin, db.Model):
             return pytz.timezone(location.timezone).utcoffset(datetime.now()).seconds
         else:
             return 0
+
+    def get_now_tz_aware(self):
+        location = Location.query.get(self.location_id)
+        return (
+            datetime.now(timezone.utc)
+            if location is None
+            else datetime.now(pytz.timezone(location.timezone))
+        )
+
+    def get_exception_predefined_label(self, now_tz_aware):
+        exception_predefined_label = "none"
+        i = 0
+        while i < len(self.exceptions):
+            exception_block = self.exceptions[i]
+            start = exception_block["start"]
+            end = exception_block["end"]
+            start_datetime = datetime(
+                start[0],
+                start[1] + 1,
+                start[2],
+                start[3],
+                start[4],
+                0,
+                0,
+                now_tz_aware.tzinfo,
+            )
+            end_datetime = datetime(
+                end[0], end[1] + 1, end[2], end[3], end[4], 0, 0, now_tz_aware.tzinfo
+            )
+            if start_datetime <= now_tz_aware and end_datetime > now_tz_aware:
+                exception_predefined_label = exception_block["temperature"]
+                break
+            i += 1
+        return exception_predefined_label
+
+    def get_std_week_predefined_label(self, now_tz_aware):
+        day_of_week = now_tz_aware.weekday()
+        std_schedule_predefined_label = "pause"
+        minutes_since_midnight = now_tz_aware.hour * 60 + now_tz_aware.minute
+        i = 0
+        while i < len(self.standard_week):
+            schedule_block = self.standard_week[i]
+            start_block = schedule_block["start"]
+            if start_block[0] == day_of_week:
+                if start_block[1] * 60 + start_block[2] < minutes_since_midnight:
+                    std_schedule_predefined_label = schedule_block["temperature"]
+                else:
+                    break
+            if start_block[0] > day_of_week:
+                break
+            i += 1
+        return std_schedule_predefined_label
 
     def __repr__(self):
         return f"<Entry [{self.hardware_id}] {self.source}>"

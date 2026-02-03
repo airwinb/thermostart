@@ -5,9 +5,11 @@
 
 ##### Parameters
 
-> | name | type | data type | description                                |
-> |------|------|-----------|--------------------------------------------|
-> | id   | path | string    | The id of the thermostat; Example: IT01234 |
+> | name                |  type | data type | description                                                                                                                                                         |
+> |---------------------|-------|-----------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+> | id                  | path  | string    | The id of the thermostat; Example: IT01234                                                                                                                          |
+> | excludeSchedules    | query | string    | Optional: use excludeSchedules=1 (or true, or anything but false) to exclude the 'predefined_temperatures', standard_week' and 'exceptions' schedules data parts    |
+> | excludeOpenThermRaw | query | string    | Optional: use excludeOpenThermRaw=1 (or true, or anything but false) to exclude the 'ot.raw' data part                                                              |
 
 ##### Headers
 
@@ -21,23 +23,32 @@
 > | http code | content-type                      | response                 |
 > |-----------|-----------------------------------|--------------------------|
 > | `200`     | `text/plain;charset=UTF-8`        | json response, see below |
-> | `400`     | `text/plain;charset=UTF-8`        | `no activated device`    |
+> | `400`     | `text/plain;charset=UTF-8`        | no activated device      |
 
 JSON response
 
-> | name            | data type | description                                |
-> |-----------------|-----------|--------------------------------------------|
-> | xxx_temperature | integer   | The actual temperature in tenth degrees; So 215 means 21.5 degrees |
-> | predefined_temperatures |   | List of preset with temperatures |
-> | standard_week | array   | Default schedule of presets during the week. "start": [dayOfWeek, hour, minutes] |
-> | source | integer    | 0 = CRASH, 1 = MANUAL (via thermostat), 2 = SERVER (via web), 3 = STD_WEEK, 4 = EXCEPTION (scheduled via web), 5 = PAUSE |
-> | source_name         | string | [CRASH, MANUAL, SERVER, STD_WEEK, EXCEPTION, PAUSE] |
-> | ot.ch_enabled       | boolean | Central Heating enabled. Parsed from ot.raw.ot0 |
-> | ot.ch_active        | boolean | Central Heating active. Parsed from ot.raw.ot0 |
-> | ot.dhw_active       | boolean | Domestic Hot Water active. Parsed from ot.raw.ot0 |
-> | ot.flame_on         | boolean | Central Heating is burning. Parsed from ot.raw.ot0 |
-> | ot.fault_indication | boolean | Parsed from ot.raw.ot0 |
-> | ot.raw              |         | OpenTherm raw data values |
+> | name                        | data type | description                                                                                              |
+> |-----------------------------|-----------|----------------------------------------------------------------------------------------------------------|
+> | name                        | string    | The name of the thermostart, eg. IT01234                                                                 |
+> | room_temperature            | integer   | The measured room temperature                                                                            |
+> | target_temperature          | integer   | The temperature to reach or maintain                                                                     |
+> | outside_temperature         | integer   | The temperature outside based on your location                                                           |
+> | source_name                 | string    | [CRASH, MANUAL, SERVER, STD_WEEK, EXCEPTION, PAUSE]                                                      |
+> | schedule_preset             | string    | [none, anti_freeze, pause, not_home, home, comfort]                                                      |
+> | ot.control_type             | string    | [modulating, on/of]                                                                                      |
+> | ot.fault_indication         | boolean   | Parsed from ot.raw.ot0                                                                                   |
+> | ot.ch_enabled               | boolean   | Central Heating enabled. Parsed from ot.raw.ot0                                                          |
+> | ot.ch_active                | boolean   | Central Heating active. Parsed from ot.raw.ot0                                                           |
+> | ot.dhw_present              | boolean   | Domestic Hot Water present. Parsed from ot.raw.ot3                                                       |
+> | ot.dhw_active               | boolean   | Domestic Hot Water active. Parsed from ot.raw.ot0                                                        |
+> | ot.flame_on                 | boolean   | Central Heater is burning. Parsed from ot.raw.ot0                                                        |
+> | ot.dhw_setpoint_temperature | integer   | Domestic Hot Water setpoint temperature. Parsed from ot.raw.ot56                                         |
+> | ot.boiler_water_temperature | integer   | Boiler Water setpoint temperature. Parsed from ot.raw.ot25                                               |
+> | ot.return_water_temperature | integer   | Return Water setpoint temperature. Parsed from ot.raw.ot28                                               |
+> | ot.raw                      |           | OpenTherm raw data values                                                                                |
+> | predefined_temperatures     |           | List of preset with temperatures. Note that these values are in tenth degrees; So 215 means 21.5 degrees |
+> | standard_week               | array     | Default schedule of presets during the week. "start": [dayOfWeek, hour, minutes]                         |
+> | exceptions                  | array     | Exceptions on the default schedule                                                                       |
 
   <details>
     <summary>JSON response example</summary>
@@ -45,9 +56,37 @@ JSON response
 ```json
 {
   "name": "IT01234",
-  "room_temperature": 202,
-  "target_temperature": 140,
-  "outside_temperature": 19,
+  "room_temperature": 20.2,
+  "target_temperature": 18,
+  "outside_temperature": -0.7,
+  "source_name": "STD_WEEK",
+  "schedule_preset": "home",
+  "ui_source": "display_mode_toggle",
+  "firmware": 30030131,
+  "ts_server_version": "2.0.0",
+  "ot": {
+    "enabled": 0,
+    "ch_enabled": true,
+    "ch_active": true,
+    "dhw_active": false,
+    "flame_on": true,
+    "fault_indication": false,
+    "raw": {
+      "ot0": 266,
+      "ot1": 17920,
+      "ot3": 16651,
+      "ot17": 0,
+      "ot18": 0,
+      "ot19": 0,
+      "ot25": 11210,
+      "ot26": 0,
+      "ot27": 0,
+      "ot28": 9733,
+      "ot34": 0,
+      "ot56": 15360,
+      "ot125": 768
+    }
+  },
   "predefined_temperatures": {
     "anti_freeze": 50,
     "comfort": 215,
@@ -267,32 +306,7 @@ JSON response
       ],
       "temperature": "not_home"
     }    
-  ],
-  "source": 3,
-  "firmware": 30030131,
-  "ot": {
-    "enabled": 0,
-    "ch_enabled": true,
-    "ch_active": true,
-    "dhw_active": false,
-    "flame_on": true,
-    "fault_indication": false,
-    "raw": {
-      "ot0": 266,
-      "ot1": 17920,
-      "ot3": 16651,
-      "ot17": 0,
-      "ot18": 0,
-      "ot19": 0,
-      "ot25": 11210,
-      "ot26": 0,
-      "ot27": 0,
-      "ot28": 9733,
-      "ot34": 0,
-      "ot56": 15360,
-      "ot125": 768
-    }
-  }
+  ]
 }
 ```
   </details>
@@ -315,14 +329,14 @@ JSON response
 
 ##### Data
 Json data with the following properies
-> | name               | data type | description                                                        |
-> |--------------------|-----------|--------------------------------------------------------------------|
-> | target_temperature | integer   | The actual temperature in tenth degrees; So 160 means 16.0 degrees |
+> | name               | data type | description                        |
+> |--------------------|-----------|------------------------------------|
+> | target_temperature | float     | The actual temperature in degrees  |
 
 Example:
 ```json
 {
-  "temperature": 160
+  "temperature": 18.5
 }
 ```
 

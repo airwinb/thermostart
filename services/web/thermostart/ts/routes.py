@@ -10,21 +10,18 @@ from flask import Blueprint, Response, jsonify, make_response, request
 from flask_socketio import emit
 
 from thermostart import db
+from thermostart.config import Config
 from thermostart.models import Device, Location
 
 from .utils import (
     Source,
     decrypt_request,
     encrypt_response,
-    firmware_upgrade_needed,
     get_firmware,
 )
 
 _LOGGER = logging.getLogger(__name__)
 ts = Blueprint("ts", __name__)
-
-# tomorrow.io (weather) api key
-TOMORROW_APIKEY = "gFUNhMZ2o4VotYhmcLrul3WYy7I2X9rN"
 
 
 # WARNING: not to be used, needs reversing, web firmware is not working
@@ -44,7 +41,7 @@ def firmware_update():
 
     device = Device.query.get(hardware_id)
     if device is None:
-        _LOGGER.warn(
+        _LOGGER.warning(
             "Device with IP %s and hardware id %s is trying to communicate, but has not been registered.",
             request.remote_addr,
             arg[1],
@@ -55,7 +52,7 @@ def firmware_update():
         tsreq = decrypt_request(arg[2], device.password)
         tsreq = parse_qs(tsreq)
     except Exception:
-        _LOGGER.warn(
+        _LOGGER.warning(
             "Request from device with IP %s and hardware id %s cannot be decoded.",
             request.remote_addr,
             arg[1],
@@ -140,7 +137,7 @@ def api():
 
     device = Device.query.get(hardware_id)
     if device is None:
-        _LOGGER.warn(
+        _LOGGER.warning(
             "Device with IP %s and hardware id %s is trying to communicate, but has not been registered.",
             request.remote_addr,
             arg[1],
@@ -151,7 +148,7 @@ def api():
         tsreq = decrypt_request(arg[2], device.password)
         tsreq = parse_qs(tsreq)
     except Exception:
-        _LOGGER.warn(
+        _LOGGER.warning(
             "Request from device with IP %s and hardware id %s cannot be decoded.",
             request.remote_addr,
             arg[1],
@@ -162,7 +159,7 @@ def api():
 
     xml = "<ITHERMOSTAT>"
 
-    if device.cal_synced is False:
+    if not device.cal_synced:
         xml += "<CAL>"
 
         std_week = ""
@@ -311,10 +308,12 @@ def api():
         location = Location.query.filter_by(id=device.location_id).one()
         if location is None:
             return Response(response="no location", status=400)
+        if Config.TOMORROW_APIKEY is None:
+            return Response(response="missing TOMORROW_APIKEY", status=400)
 
         querystring = {
             "location": f"{location.latitude}, {location.longitude}",
-            "apikey": TOMORROW_APIKEY,
+            "apikey": Config.TOMORROW_APIKEY,
         }
         url = "https://api.tomorrow.io/v4/weather/realtime"
         response = requests.request("GET", url, params=querystring)
@@ -409,6 +408,7 @@ def api():
             and int(tsreq["csv"][0]) != device.target_temperature
         ):
             device.source = Source.MANUAL.value
+            device.target_temperature = int(tsreq["csv"][0])
             db.session.commit()
             emit(
                 "target_temperature",
@@ -468,55 +468,96 @@ def api():
 
 @ts.route("/thermostat/<device_id>", methods=["GET", "PUT"])
 def thermostat(device_id):
-    # excludeSchedules = request.args.get('excludeSchedules')
+    exclude_schedules = request.args.get("excludeSchedules")
+    exclude_opentherm_raw = request.args.get("excludeOpenThermRaw")
+
     device = Device.query.get(device_id)
     if device is None:
         return Response(response="no activated device", status=400)
     if request.method == "GET":
-        return jsonify(
-            name=device.hardware_id,
-            room_temperature=device.room_temperature,
-            target_temperature=device.target_temperature,
-            outside_temperature=device.outside_temperature,
-            predefined_temperatures=device.predefined_temperatures,
-            standard_week=device.standard_week,
-            exceptions=device.exceptions,
-            source=device.source,
-            source_name=Source(device.source).name,
-            ui_source=device.ui_source,
-            firmware=device.fw,
-            ot={
-                "enabled": device.oo,
-                "ch_enabled": device.ot0 & 0b000100000000 == 0b000100000000,
-                "ch_active": device.ot0 & 0b0010 == 0b0010,
-                "dhw_active": device.ot0 & 0b0100 == 0b0100,
-                "flame_on": device.ot0 & 0b1000 == 0b1000,
-                "fault_indication": device.ot0 & 0b0001 == 0b0001,
-                "raw": {
-                    "ot0": device.ot0,
-                    "ot1": device.ot1,
-                    "ot3": device.ot3,
-                    "ot17": device.ot17,
-                    "ot18": device.ot18,
-                    "ot19": device.ot19,
-                    "ot25": device.ot25,
-                    "ot26": device.ot26,
-                    "ot27": device.ot27,
-                    "ot28": device.ot28,
-                    "ot34": device.ot34,
-                    "ot56": device.ot56,
-                    "ot125": device.ot125,
-                },
-            },
-        )
+        current_target_temperature = device.target_temperature / 10
+        currentSource = device.source
+        now_tz_aware = device.get_now_tz_aware()
+        schedule_preset = device.get_exception_predefined_label(now_tz_aware)
+        if schedule_preset != "none":
+            currentSource = Source.EXCEPTION.value
+            current_target_temperature = (
+                device.predefined_temperatures[schedule_preset] / 10
+            )
+        else:
+            if currentSource == Source.EXCEPTION.value:
+                # this does not get updated by the thermostat itself
+                device.source = Source.STD_WEEK.value
+                currentSource = Source.STD_WEEK.value
+            if device.source == Source.STD_WEEK.value:
+                schedule_preset = device.get_std_week_predefined_label(now_tz_aware)
+                current_target_temperature = (
+                    device.predefined_temperatures[schedule_preset] / 10
+                )
+
+        data = {
+            "name": device.hardware_id,
+            "room_temperature": device.room_temperature / 10,
+            "target_temperature": current_target_temperature,
+            "outside_temperature": device.outside_temperature / 10,
+            "source_name": Source(currentSource).name,
+            "schedule_preset": schedule_preset,
+            "ui_source": device.ui_source,
+            "firmware": device.fw,
+            "ts_server_version": Config.TS_SERVER_VERSION,
+        }
+        ot = {
+            "enabled": device.oo,
+            "control_type": (
+                "on/off"
+                if device.ot3 & 0b001000000000 == 0b001000000000
+                else "modulating"
+            ),
+            "fault_indication": device.ot0 & 0b0001 == 0b0001,
+            "ch_enabled": device.ot0 & 0b000100000000 == 0b000100000000,
+            "ch_active": device.ot0 & 0b0010 == 0b0010,
+            "dhw_present": device.ot3 & 0b000100000000 == 0b000100000000,
+            "dhw_active": device.ot0 & 0b0100 == 0b0100,
+            "flame_on": device.ot0 & 0b1000 == 0b1000,
+            "dhw_setpoint_temperature": round(device.ot56 / 256, 1),
+            "boiler_water_temperature": round(device.ot25 / 256, 1),
+            "return_water_temperature": round(device.ot28 / 256, 1),
+            # "version_slave": device.ot125 HB + "." + device.ot125 LB
+        }
+
+        if exclude_opentherm_raw is None or exclude_opentherm_raw.lower() == "false":
+            ot["raw"] = {
+                "ot0": device.ot0,
+                "ot1": device.ot1,
+                "ot3": device.ot3,
+                "ot17": device.ot17,
+                "ot18": device.ot18,
+                "ot19": device.ot19,
+                "ot25": device.ot25,
+                "ot26": device.ot26,
+                "ot27": device.ot27,
+                "ot28": device.ot28,
+                "ot34": device.ot34,
+                "ot56": device.ot56,
+                "ot125": device.ot125,
+            }
+        data["ot"] = ot
+
+        if exclude_schedules is None or exclude_schedules.lower() == "false":
+            data["predefined_temperatures"] = device.predefined_temperatures
+            data["standard_week"] = device.standard_week
+            data["exceptions"] = device.exceptions
+
+        return jsonify(data)
+
     elif request.method == "PUT":
         data = request.json
         changed = False
 
         if data.get("target_temperature"):
-            device.target_temperature = data.get("target_temperature")
+            device.target_temperature = data.get("target_temperature") * 10
             device.ui_source = "api_temperature_setter"
-            device.source = Source.MANUAL.value
+            device.source = Source.SERVER.value
             changed = True
 
         if data.get("exceptions"):
@@ -532,11 +573,7 @@ def thermostat(device_id):
             changed = True
 
         if data.get("outside_temperature"):
-            device.outside_temperature = data.get("outside_temperature")
-            changed = True
-
-        if data.get("room_temperature"):
-            device.room_temperature = data.get("room_temperature")
+            device.outside_temperature = data.get("outside_temperature") * 10
             changed = True
 
         if changed:
@@ -570,7 +607,6 @@ def thermostat_unpause(device_id):
 
     device.ui_source = "api_pause_button"
     device.source = Source.STD_WEEK.value
-    # device.source = Source.SERVER.value
     device.ui_synced = False
     db.session.commit()
     return Response(response="OK", status=200)
