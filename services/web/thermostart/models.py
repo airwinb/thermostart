@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import pytz
 from flask_login import UserMixin
@@ -183,9 +183,22 @@ class Device(UserMixin, db.Model):
                 0,
                 now_tz_aware.tzinfo,
             )
-            end_datetime = datetime(
-                end[0], end[1] + 1, end[2], end[3], end[4], 0, 0, now_tz_aware.tzinfo
-            )
+            # it is possible that the end time is set to 24:00. In this case we just use the day information and take the next day
+            if end[3] == 24:
+                end_datetime = datetime(
+                    end[0], end[1] + 1, end[2], 0, 0, 0, 0, now_tz_aware.tzinfo
+                ) + timedelta(days=1)
+            else:
+                end_datetime = datetime(
+                    end[0],
+                    end[1] + 1,
+                    end[2],
+                    end[3],
+                    end[4],
+                    0,
+                    0,
+                    now_tz_aware.tzinfo,
+                )
             if start_datetime <= now_tz_aware and end_datetime > now_tz_aware:
                 exception_predefined_label = exception_block["temperature"]
                 break
